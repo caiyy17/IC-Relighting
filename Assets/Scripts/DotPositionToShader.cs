@@ -1,0 +1,30 @@
+using UnityEngine;
+
+public class DotPositionToShader : MonoBehaviour
+{
+    RectTransform dotRectTransform;
+    Canvas canvas;
+    public string shaderProperty = "_DotPosition"; // Ensure this matches the property name in Shader Graph
+    private void Awake()
+    {
+        dotRectTransform = GetComponent<RectTransform>();
+        canvas = GetComponentInParent<Canvas>();
+    }
+
+    private void Update()
+    {
+        // Convert the dot position to normalized screen coordinates
+        Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(canvas.worldCamera, dotRectTransform.position);
+        Vector2 normalizedScreenPosition = new Vector2(screenPosition.x / Screen.width - 0.5f, screenPosition.y / Screen.height - 0.5f);
+
+        // Set the normalized screen position to the shader
+        Debug.Log(normalizedScreenPosition);
+        Shader.SetGlobalVector(shaderProperty, new Vector4(normalizedScreenPosition.x, normalizedScreenPosition.y, 0, 0));
+    }
+
+    private void OnDestroy()
+    {
+        // Reset the shader property when the script is destroyed
+        Shader.SetGlobalVector(shaderProperty, Vector4.zero);
+    }
+}
