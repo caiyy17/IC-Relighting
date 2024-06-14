@@ -1,12 +1,21 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
+using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
-[RequireComponent(typeof(ImageScaler))]
 public class ImageUploader : MonoBehaviour
 {
+    public Button settingsButton;
+    //panel
+    public GameObject settingsPanel;
+    public Button closeButton;
+    public Slider lightIntensitySlider;
+    public Slider globalIntensitySlider;
+    public ColorPicker lightColorPicker;
+    public ColorPicker globalColorPicker;
     public Button uploadButton;
     public Button sendButton;
     public Renderer quadRenderer;
@@ -23,8 +32,29 @@ public class ImageUploader : MonoBehaviour
         uploadButton.onClick.AddListener(OnUploadButtonClick);
         sendButton.onClick.AddListener(OnSendButtonClick);
 
+        settingsButton.onClick.AddListener(() =>
+        {
+            settingsPanel.SetActive(true);
+        });
+        closeButton.onClick.AddListener(() =>
+        {
+            settingsPanel.SetActive(false);
+        });
         // 备份初始材质状态
         BackupMaterialState();
+        lightIntensitySlider.value = originalMaterialState.lightIntensity;
+        globalIntensitySlider.value = originalMaterialState.globalIntensity;
+        lightColorPicker.SetColor(originalMaterialState.lightColor);
+        globalColorPicker.SetColor(originalMaterialState.globalColor);
+    }
+
+    void Update()
+    {
+        // 更新材质属性
+        targetMaterial.SetFloat("_Intensity", lightIntensitySlider.value);
+        targetMaterial.SetFloat("_exposure", globalIntensitySlider.value);
+        targetMaterial.SetColor("_LightColor", lightColorPicker.GetColor());
+        targetMaterial.SetColor("_Global", globalColorPicker.GetColor());
     }
 
     void OnUploadButtonClick()
@@ -45,8 +75,20 @@ public class ImageUploader : MonoBehaviour
         #if UNITY_EDITOR
         return UnityEditor.EditorUtility.OpenFilePanel("Select Image", "", "png,jpg,jpeg");
         #else
-        return ""; // Implement platform-specific file picker logic here
+        return null;
         #endif
+    }
+
+    void OnImagePicked(string path)
+    {
+        if (!string.IsNullOrEmpty(path))
+        {
+            StartCoroutine(LoadImage(path));
+        }
+        else
+        {
+            Debug.Log("Image picking cancelled or failed.");
+        }
     }
 
     System.Collections.IEnumerator LoadImage(string path)
@@ -154,6 +196,10 @@ public class ImageUploader : MonoBehaviour
         public Texture baseU;
         public Texture baseD;
         public Texture mask;
+        public Color lightColor;
+        public Color globalColor;
+        public float lightIntensity;
+        public float globalIntensity;
     }
 
     // 备份初始材质状态
@@ -165,7 +211,11 @@ public class ImageUploader : MonoBehaviour
             baseR = targetMaterial.GetTexture("_BaseR"),
             baseU = targetMaterial.GetTexture("_BaseU"),
             baseD = targetMaterial.GetTexture("_BaseD"),
-            mask = targetMaterial.GetTexture("_Mask")
+            mask = targetMaterial.GetTexture("_Mask"),
+            lightColor = targetMaterial.GetColor("_LightColor"),
+            globalColor = targetMaterial.GetColor("_Global"),
+            lightIntensity = targetMaterial.GetFloat("_Intensity"),
+            globalIntensity = targetMaterial.GetFloat("_exposure")
         };
     }
 
@@ -177,6 +227,10 @@ public class ImageUploader : MonoBehaviour
         targetMaterial.SetTexture("_BaseU", originalMaterialState.baseU);
         targetMaterial.SetTexture("_BaseD", originalMaterialState.baseD);
         targetMaterial.SetTexture("_Mask", originalMaterialState.mask);
+        targetMaterial.SetColor("_LightColor", originalMaterialState.lightColor);
+        targetMaterial.SetColor("_Global", originalMaterialState.globalColor);
+        targetMaterial.SetFloat("_Intensity", originalMaterialState.lightIntensity);
+        targetMaterial.SetFloat("_exposure", originalMaterialState.globalIntensity);
     }
 
     void OnApplicationQuit()
