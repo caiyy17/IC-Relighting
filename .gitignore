@@ -79,5 +79,6 @@ secrets_chatgpt.py
 env.json
 # hide tmp except tmp/TMP_FILE_HERE
 tmp/
+[Aa]ssets/TextMesh Pro
 
 __pycache__

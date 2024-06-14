@@ -5,7 +5,6 @@ public class MoveableDot : MonoBehaviour, IPointerDownHandler, IDragHandler
 {
     RectTransform dotRectTransform;
     Canvas canvas;
-    public Rect movementBounds; // Define the movement boundaries in normalized screen space (0 to 1)
 
     private void Awake()
     {
@@ -27,7 +26,8 @@ public class MoveableDot : MonoBehaviour, IPointerDownHandler, IDragHandler
     {
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, eventData.position, eventData.pressEventCamera, out localPoint);
-
+        // Restrict inside the canvas
+        localPoint = new Vector2(Mathf.Clamp(localPoint.x, -canvas.pixelRect.width / 2, canvas.pixelRect.width / 2), Mathf.Clamp(localPoint.y, -canvas.pixelRect.height / 2, canvas.pixelRect.height / 2));
         // Set the position of the dot
         dotRectTransform.anchoredPosition = localPoint;
     }
