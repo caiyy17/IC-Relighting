@@ -63,14 +63,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _Global: 0
-    - _Intensity: 1
+    - _Intensity: 2
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _exposure: 2
+    - _exposure: 1
     m_Colors:
     - _DotPosition: {r: 0, g: 0, b: 0, a: 0}
-    - _Global: {r: 1, g: 1, b: 1, a: 1}
-    - _LightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Global: {r: 1, g: 1, b: 1, a: 0}
+    - _LightColor: {r: 1, g: 1, b: 1, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &3861127130323354936

@@ -17,12 +17,15 @@ public class ImageUploader : MonoBehaviour
     public ColorPicker lightColorPicker;
     public ColorPicker globalColorPicker;
     public Button uploadButton;
+    public Button syncButton;
     public Button sendButton;
     public Renderer quadRenderer;
-    public string url = "http://cyy-desktop.local:5000/upload";
+    public string url = "http://cyy-desktop.local:5000";
     public List<ImageScaler> images = new List<ImageScaler>();
     public Material targetMaterial;
     Texture2D uploadedTexture;
+    Texture2D syncedTexture;
+    List<Texture2D> syncedTextures = new List<Texture2D>();
     List<Texture2D> receivedTextures = new List<Texture2D>();
     MaterialState originalMaterialState;
     int timeout = 30;
@@ -30,6 +33,7 @@ public class ImageUploader : MonoBehaviour
     void Start()
     {
         uploadButton.onClick.AddListener(OnUploadButtonClick);
+        syncButton.onClick.AddListener(OnSyncButtonClick);
         sendButton.onClick.AddListener(OnSendButtonClick);
 
         settingsButton.onClick.AddListener(() =>
@@ -66,6 +70,11 @@ public class ImageUploader : MonoBehaviour
         }
     }
 
+    void OnSyncButtonClick()
+    {
+        StartCoroutine(ReceiveImageFromServer());
+    }
+
     string OpenFileBrowser()
     {
         // 打开文件浏览器（需第三方插件或自定义实现）
@@ -98,11 +107,15 @@ public class ImageUploader : MonoBehaviour
         uploadedTexture.LoadImage(imageData);
 
         yield return null;
+        SetupTextures(uploadedTexture);
+    }
 
-        quadRenderer.material.mainTexture = uploadedTexture;
+    void SetupTextures(Texture2D texture)
+    {
+        quadRenderer.material.mainTexture = texture;
         foreach (ImageScaler image in images)
         {
-            image.ChangeImage(uploadedTexture);
+            image.ChangeImage(texture);
         }
 
         //make a black texture
@@ -119,7 +132,6 @@ public class ImageUploader : MonoBehaviour
         targetMaterial.SetTexture("_BaseU", blackTexture);
         targetMaterial.SetTexture("_BaseD", blackTexture);
         targetMaterial.SetTexture("_Mask", blackTexture);
-
     }
 
     void OnSendButtonClick()
@@ -130,13 +142,57 @@ public class ImageUploader : MonoBehaviour
         }
     }
 
+    System.Collections.IEnumerator ReceiveImageFromServer()
+    {
+        UnityWebRequest www = UnityWebRequest.PostWwwForm(url + "/sync", "");
+        www.timeout = timeout;
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError(www.error);
+        }
+        else
+        {
+            string jsonResponse = www.downloadHandler.text;
+            HandleSyncResponse(jsonResponse);
+            Debug.Log("Received textures: " + syncedTextures.Count);
+        }
+    }
+
+    
+    void HandleSyncResponse(string jsonResponse)
+    {
+        // 处理JSON响应
+        Debug.Log("Server response: " + jsonResponse);
+        JsonData responseData = JsonUtility.FromJson<JsonData>(jsonResponse);
+        if (responseData.status == "success")
+        {
+            syncedTextures.Clear();
+            foreach (string base64Image in responseData.images)
+            {
+                Texture2D texture = new Texture2D(2, 2);
+                byte[] imageData = System.Convert.FromBase64String(base64Image);
+                texture.LoadImage(imageData);
+                syncedTextures.Add(texture);
+            }
+            
+            // 在这里处理接收到的纹理
+            if (syncedTextures.Count >= 1)
+            {
+                uploadedTexture = syncedTextures[0];
+                SetupTextures(uploadedTexture);
+            }
+        }
+    }
+
     System.Collections.IEnumerator SendImageToServer(Texture2D texture)
     {
         byte[] imageData = texture.EncodeToPNG();
         WWWForm form = new WWWForm();
         form.AddBinaryData("image", imageData, "image.png", "image/png");
 
-        UnityWebRequest www = UnityWebRequest.Post(url, form);
+        UnityWebRequest www = UnityWebRequest.Post(url + "/process", form);
         www.timeout = timeout;
         yield return www.SendWebRequest();
 
@@ -148,6 +204,7 @@ public class ImageUploader : MonoBehaviour
         {
             string jsonResponse = www.downloadHandler.text;
             HandleServerResponse(jsonResponse);
+            Debug.Log("Received textures: " + receivedTextures.Count);
         }
     }
 
