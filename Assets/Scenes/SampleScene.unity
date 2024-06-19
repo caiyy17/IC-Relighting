@@ -4272,7 +4272,7 @@ MonoBehaviour:
   syncButton: {fileID: 1008918115}
   sendButton: {fileID: 1504026373}
   quadRenderer: {fileID: 11579628}
-  url: http://127.0.0.1:5002
+  url: http://cyy-desktop.local/service2
   images:
   - {fileID: 11579631}
   - {fileID: 495255567}

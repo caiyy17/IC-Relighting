@@ -148,17 +148,30 @@ public class ImageUploader : MonoBehaviour
         www.timeout = timeout;
         yield return www.SendWebRequest();
 
-        if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+        if (www.result == UnityWebRequest.Result.ConnectionError)
         {
-            Debug.LogError(www.error);
+            Debug.LogError("Connection Error: " + www.error);
         }
-        else
+        else if (www.result == UnityWebRequest.Result.DataProcessingError)
+        {
+            Debug.LogError("Data Processing Error: " + www.error);
+        }
+        else if (www.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError("Protocol Error: " + www.error);
+        }
+        else if (www.result == UnityWebRequest.Result.Success)
         {
             string jsonResponse = www.downloadHandler.text;
             HandleSyncResponse(jsonResponse);
             Debug.Log("Received textures: " + syncedTextures.Count);
         }
+        else
+        {
+            Debug.LogError("Unknown Error Occurred");
+        }
     }
+
 
     
     void HandleSyncResponse(string jsonResponse)
