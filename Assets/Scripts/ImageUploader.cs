@@ -5,9 +5,12 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using TMPro;
 
 public class ImageUploader : MonoBehaviour
 {
+    public TMP_InputField urlInput;
+    public Button urlButton;
     public Button settingsButton;
     //panel
     public GameObject settingsPanel;
@@ -32,6 +35,13 @@ public class ImageUploader : MonoBehaviour
 
     void Start()
     {
+        urlInput.text = PlayerPrefs.GetString("server_url", url);
+        url = urlInput.text;
+        urlButton.onClick.AddListener(() =>
+        {
+            url = urlInput.text;
+            PlayerPrefs.SetString("server_url", url);
+        });
         uploadButton.onClick.AddListener(OnUploadButtonClick);
         syncButton.onClick.AddListener(OnSyncButtonClick);
         sendButton.onClick.AddListener(OnSendButtonClick);
