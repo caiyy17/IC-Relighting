@@ -17,8 +17,10 @@ public class ImageUploader : MonoBehaviour
     public Button closeButton;
     public Slider lightIntensitySlider;
     public Slider globalIntensitySlider;
+    public Slider bgIntensitySlider;
     public ColorPicker lightColorPicker;
     public ColorPicker globalColorPicker;
+    public ColorPicker bgColorPicker;
     public Button uploadButton;
     public Button syncButton;
     public Button sendButton;
@@ -31,7 +33,7 @@ public class ImageUploader : MonoBehaviour
     List<Texture2D> syncedTextures = new List<Texture2D>();
     List<Texture2D> receivedTextures = new List<Texture2D>();
     MaterialState originalMaterialState;
-    int timeout = 30;
+    int timeout = 90;
 
     void Start()
     {
@@ -58,8 +60,10 @@ public class ImageUploader : MonoBehaviour
         BackupMaterialState();
         lightIntensitySlider.value = originalMaterialState.lightIntensity;
         globalIntensitySlider.value = originalMaterialState.globalIntensity;
+        bgIntensitySlider.value = originalMaterialState.bgIntensity;
         lightColorPicker.SetColor(originalMaterialState.lightColor);
         globalColorPicker.SetColor(originalMaterialState.globalColor);
+        bgColorPicker.SetColor(originalMaterialState.bgColor);
     }
 
     void Update()
@@ -67,8 +71,10 @@ public class ImageUploader : MonoBehaviour
         // 更新材质属性
         targetMaterial.SetFloat("_Intensity", lightIntensitySlider.value);
         targetMaterial.SetFloat("_exposure", globalIntensitySlider.value);
+        targetMaterial.SetFloat("_bgIntensity", bgIntensitySlider.value);
         targetMaterial.SetColor("_LightColor", lightColorPicker.GetColor());
         targetMaterial.SetColor("_Global", globalColorPicker.GetColor());
+        targetMaterial.SetColor("_BgColor", bgColorPicker.GetColor());
     }
 
     void OnUploadButtonClick()
@@ -137,6 +143,7 @@ public class ImageUploader : MonoBehaviour
         }
         blackTexture.SetPixels(colors);
         blackTexture.Apply();
+        targetMaterial.SetTexture("_Base", texture);
         targetMaterial.SetTexture("_BaseL", blackTexture);
         targetMaterial.SetTexture("_BaseR", blackTexture);
         targetMaterial.SetTexture("_BaseU", blackTexture);
@@ -156,7 +163,37 @@ public class ImageUploader : MonoBehaviour
     {
         UnityWebRequest www = UnityWebRequest.PostWwwForm(url + "/sync", "");
         www.timeout = timeout;
+        // Set white texture
+        Texture2D whiteTexture = new Texture2D(2, 2);
+        Color[] colors = new Color[4];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            colors[i] = Color.white;
+        }
+        whiteTexture.SetPixels(colors);
+        whiteTexture.Apply();
+        targetMaterial.SetTexture("_BaseL", whiteTexture);
+        targetMaterial.SetTexture("_BaseR", whiteTexture);
+        targetMaterial.SetTexture("_BaseU", whiteTexture);
+        targetMaterial.SetTexture("_BaseD", whiteTexture);
+        targetMaterial.SetTexture("_Mask", whiteTexture);
+
         yield return www.SendWebRequest();
+
+        // Reset to black texture
+        Texture2D blackTexture = new Texture2D(2, 2);
+        colors = new Color[4];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            colors[i] = Color.black;
+        }
+        blackTexture.SetPixels(colors);
+        blackTexture.Apply();
+        targetMaterial.SetTexture("_BaseL", blackTexture);
+        targetMaterial.SetTexture("_BaseR", blackTexture);
+        targetMaterial.SetTexture("_BaseU", blackTexture);
+        targetMaterial.SetTexture("_BaseD", blackTexture);
+        targetMaterial.SetTexture("_Mask", blackTexture);
 
         if (www.result == UnityWebRequest.Result.ConnectionError)
         {
@@ -217,7 +254,38 @@ public class ImageUploader : MonoBehaviour
 
         UnityWebRequest www = UnityWebRequest.Post(url + "/process", form);
         www.timeout = timeout;
+
+        // Set white texture
+        Texture2D whiteTexture = new Texture2D(2, 2);
+        Color[] colors = new Color[4];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            colors[i] = Color.white;
+        }
+        whiteTexture.SetPixels(colors);
+        whiteTexture.Apply();
+        targetMaterial.SetTexture("_BaseL", whiteTexture);
+        targetMaterial.SetTexture("_BaseR", whiteTexture);
+        targetMaterial.SetTexture("_BaseU", whiteTexture);
+        targetMaterial.SetTexture("_BaseD", whiteTexture);
+        targetMaterial.SetTexture("_Mask", whiteTexture);
+
         yield return www.SendWebRequest();
+
+        // Reset to black texture
+        Texture2D blackTexture = new Texture2D(2, 2);
+        colors = new Color[4];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            colors[i] = Color.black;
+        }
+        blackTexture.SetPixels(colors);
+        blackTexture.Apply();
+        targetMaterial.SetTexture("_BaseL", blackTexture);
+        targetMaterial.SetTexture("_BaseR", blackTexture);
+        targetMaterial.SetTexture("_BaseU", blackTexture);
+        targetMaterial.SetTexture("_BaseD", blackTexture);
+        targetMaterial.SetTexture("_Mask", blackTexture);
 
         if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
         {
@@ -271,6 +339,7 @@ public class ImageUploader : MonoBehaviour
     [System.Serializable]
     public struct MaterialState
     {
+        public Texture baseT;
         public Texture baseL;
         public Texture baseR;
         public Texture baseU;
@@ -278,8 +347,10 @@ public class ImageUploader : MonoBehaviour
         public Texture mask;
         public Color lightColor;
         public Color globalColor;
+        public Color bgColor;
         public float lightIntensity;
         public float globalIntensity;
+        public float bgIntensity;
     }
 
     // 备份初始材质状态
@@ -287,6 +358,7 @@ public class ImageUploader : MonoBehaviour
     {
         originalMaterialState = new MaterialState
         {
+            baseT = targetMaterial.GetTexture("_Base"),
             baseL = targetMaterial.GetTexture("_BaseL"),
             baseR = targetMaterial.GetTexture("_BaseR"),
             baseU = targetMaterial.GetTexture("_BaseU"),
@@ -294,14 +366,17 @@ public class ImageUploader : MonoBehaviour
             mask = targetMaterial.GetTexture("_Mask"),
             lightColor = targetMaterial.GetColor("_LightColor"),
             globalColor = targetMaterial.GetColor("_Global"),
+            bgColor = targetMaterial.GetColor("_BgColor"),
             lightIntensity = targetMaterial.GetFloat("_Intensity"),
-            globalIntensity = targetMaterial.GetFloat("_exposure")
+            globalIntensity = targetMaterial.GetFloat("_exposure"),
+            bgIntensity = targetMaterial.GetFloat("_bgIntensity")
         };
     }
 
     // 恢复材质初始状态
     void RestoreMaterialState()
     {
+        targetMaterial.SetTexture("_Base", originalMaterialState.baseT);
         targetMaterial.SetTexture("_BaseL", originalMaterialState.baseL);
         targetMaterial.SetTexture("_BaseR", originalMaterialState.baseR);
         targetMaterial.SetTexture("_BaseU", originalMaterialState.baseU);
@@ -309,8 +384,10 @@ public class ImageUploader : MonoBehaviour
         targetMaterial.SetTexture("_Mask", originalMaterialState.mask);
         targetMaterial.SetColor("_LightColor", originalMaterialState.lightColor);
         targetMaterial.SetColor("_Global", originalMaterialState.globalColor);
+        targetMaterial.SetColor("_BgColor", originalMaterialState.bgColor);
         targetMaterial.SetFloat("_Intensity", originalMaterialState.lightIntensity);
         targetMaterial.SetFloat("_exposure", originalMaterialState.globalIntensity);
+        targetMaterial.SetFloat("_bgIntensity", originalMaterialState.bgIntensity);
     }
 
     void OnApplicationQuit()
