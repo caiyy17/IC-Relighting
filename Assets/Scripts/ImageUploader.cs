@@ -34,6 +34,7 @@ public class ImageUploader : MonoBehaviour
     List<Texture2D> receivedTextures = new List<Texture2D>();
     MaterialState originalMaterialState;
     int timeout = 90;
+    bool isBusy = false;
 
     void Start()
     {
@@ -88,7 +89,11 @@ public class ImageUploader : MonoBehaviour
 
     void OnSyncButtonClick()
     {
-        StartCoroutine(ReceiveImageFromServer());
+        if (!isBusy){
+            isBusy = true;
+            StartCoroutine(ReceiveImageFromServer());
+        }
+        
     }
 
     string OpenFileBrowser()
@@ -153,8 +158,9 @@ public class ImageUploader : MonoBehaviour
 
     void OnSendButtonClick()
     {
-        if (uploadedTexture != null)
+        if (uploadedTexture != null && !isBusy)
         {
+            isBusy = true;
             StartCoroutine(SendImageToServer(uploadedTexture));
         }
     }
@@ -217,6 +223,8 @@ public class ImageUploader : MonoBehaviour
         {
             Debug.LogError("Unknown Error Occurred");
         }
+
+        isBusy = false;
     }
 
 
@@ -297,6 +305,8 @@ public class ImageUploader : MonoBehaviour
             HandleServerResponse(jsonResponse);
             Debug.Log("Received textures: " + receivedTextures.Count);
         }
+
+        isBusy = false;
     }
 
     void HandleServerResponse(string jsonResponse)
